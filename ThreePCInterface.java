@@ -2,8 +2,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface ThreePCInterface extends Remote {
-	void setTransFlag(boolean flag) throws RemoteException;
-	boolean getTransFlag() throws RemoteException;
+	void setTransFlag(int value) throws RemoteException;
+	int getTransFlag() throws RemoteException;
 	void incVariable() throws RemoteException;
 	void setVariable(int y) throws RemoteException;
 

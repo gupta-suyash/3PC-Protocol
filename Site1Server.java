@@ -4,17 +4,17 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 	
 public class Site1Server implements ThreePCInterface {
-	static boolean transflag = false, reqflag = false;
-	static int responseIs = 0, decisionIs = 0, ackflag = 0;
+	static boolean reqflag = false;
+	static int responseIs = 0, decisionIs = 0, ackflag = 0, transflag = 0;
 	static int x = 3;
 	public Site1Server() {}
 	
-	public void setTransFlag(boolean flag) {
+	public void setTransFlag(int value) {
 		//System.out.println("Trans Flag is set");
-		Site1Server.transflag = flag;
+		Site1Server.transflag = value;
 	}
 
-	public boolean getTransFlag() {
+	public int getTransFlag() {
 		return Site1Server.transflag;
 	}
 
@@ -61,19 +61,13 @@ public class Site1Server implements ThreePCInterface {
 	public static void main(String args[]) {
 		try {
 			Site1Server obj = new Site1Server();
-			ThreePCInterface stub = 
-						(ThreePCInterface) UnicastRemoteObject.exportObject(obj, 0);
+			ThreePCInterface stub = (ThreePCInterface) UnicastRemoteObject.exportObject(obj, 0);
 			
 			// Bind the remote object's stub in the registry
 			Registry registry = LocateRegistry.getRegistry();
 			registry.bind("Site1Server", stub);
 		
-		    System.out.println("Site 1 Started !");
-
-		//	while(!transflag) {
-		//		System.out.println(transflag);
-		//	}
-
+			System.out.println("Site 1 Started !");
 		} catch (Exception e) {
 		    System.err.println("Server exception: " + e.toString());
 		    e.printStackTrace();
