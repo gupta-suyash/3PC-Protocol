@@ -15,4 +15,7 @@ public interface ThreePCInterface extends Remote {
 	int getDecision() throws RemoteException;
 	void setAck(int value) throws RemoteException;
 	int getAck() throws RemoteException;
+
+	void setLeaderVote(int id, int value) throws RemoteException;
+	int getLeaderVote(int id) throws RemoteException;
 }

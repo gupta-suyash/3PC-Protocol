@@ -6,12 +6,21 @@ import java.rmi.server.UnicastRemoteObject;
 public class Site1Server implements ThreePCInterface {
 	static boolean reqflag = false;
 	static int responseIs = 0, decisionIs = 0, ackflag = 0, transflag = 0;
+	static int []leaderVals;
 	static int x = 3;
 	public Site1Server() {}
 	
 	public void setTransFlag(int value) {
 		//System.out.println("Trans Flag is set");
 		Site1Server.transflag = value;
+	}
+
+	public void setLeaderVote(int id, int value) {
+		Site1Server.leaderVals[id] = value;
+	}
+
+	public int getLeaderVote(int id) {
+		return Site1Server.leaderVals[id];
 	}
 
 	public int getTransFlag() {
@@ -66,6 +75,10 @@ public class Site1Server implements ThreePCInterface {
 			// Bind the remote object's stub in the registry
 			Registry registry = LocateRegistry.getRegistry();
 			registry.bind("Site1Server", stub);
+
+			String tnodes 	= (args.length < 1) ? "2" : args[0];		// Total Sites
+			int total 	= Integer.parseInt(tnodes);
+			leaderVals	= new int[total];
 		
 			System.out.println("Site 1 Started !");
 		} catch (Exception e) {

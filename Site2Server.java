@@ -6,6 +6,7 @@ import java.rmi.server.UnicastRemoteObject;
 public class Site2Server implements ThreePCInterface {
 	static boolean reqflag = false;
 	static int responseIs = 0, decisionIs = 0, ackflag = 0, transflag = 0;
+	static int []leaderVals;
 	static int x = 3;
 	public Site2Server() {}
 	
@@ -15,6 +16,14 @@ public class Site2Server implements ThreePCInterface {
 
 	public int getTransFlag() {
 		return Site2Server.transflag;
+	}
+
+	public void setLeaderVote(int id, int value) {
+		Site2Server.leaderVals[id] = value;
+	}
+
+	public int getLeaderVote(int id) {
+		return Site2Server.leaderVals[id];
 	}
 
 	public void setReqFlag(boolean flag) {
@@ -66,6 +75,10 @@ public class Site2Server implements ThreePCInterface {
 			Registry registry = LocateRegistry.getRegistry();
 			registry.bind("Site2Server", stub);
 		
+			String tnodes 	= (args.length < 1) ? "2" : args[0];		// Total Sites
+			int total 	= Integer.parseInt(tnodes);
+			leaderVals	= new int[total];
+
 			System.out.println("Site 2 Started !");
 		} catch (Exception e) {
 		    System.err.println("Server exception: " + e.toString());

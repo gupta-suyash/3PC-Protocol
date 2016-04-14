@@ -23,7 +23,7 @@ public class Site1Client {
 		int failed_sites = total_sites, timeout = 0;
 
 		try {
-			while(timeout < (total_sites*1000)) {
+			while(timeout < (total_sites*5000)) {
 				for(int i=0; i<total_sites; i++) {
 					if(!sflag[i]) {
 						if(siteX[i].getAck() == decision) {
@@ -33,6 +33,7 @@ public class Site1Client {
 						} } }
 				timeout++;
 			}
+			//System.out.println("Timed out");
 			fsi.count = failed_sites;
 			fsi.sites = sflag;
 		} catch (Exception e) {
@@ -90,7 +91,7 @@ public class Site1Client {
 
 
 	public static void main(String[] args) {
-		int i=0, failed_sites = 0, j=0;
+		int i=0, failed_sites = 0, j=0, original_sites, alias;
 		String tsites 	= (args.length < 1) ? "0" : args[0];	// Total Sites
 		String cord 	= (args.length > 1) ? args[1] : "1";	// Coordinator
 		String sid	= (args.length > 2) ? args[2] : "1";	// Site id
@@ -99,6 +100,10 @@ public class Site1Client {
 		int site_id	= Integer.parseInt(sid);		// Site id
 		int total_sites	= Integer.parseInt(tsites);		// Total number of sites excluding me
 		int coordinator = Integer.parseInt(cord);		// Coordinator node
+
+		// Setting up the aliases
+		original_sites	= total_sites+1;
+		alias			= site_id;
 		try {
 			System.out.println("Site" + sid);
 			Registry registry 	= LocateRegistry.getRegistry(host);
@@ -234,7 +239,7 @@ public class Site1Client {
 								write_decision(siteX, sites, total_sites, 1, "Global-Commit");
 							}
 							else { // No failure -- Commit
-								selfFailure = 1;//rd.nextInt(4);	
+								selfFailure = 0;//rd.nextInt(4);	
 								if(selfFailure == 0) { // Self Failure
 									System.out.println("Alert !!! Coordinator has failed");  
 									resetFlags(stub);
@@ -323,8 +328,33 @@ public class Site1Client {
 							siteX		= stemp;
 							total_sites--;
 
-							coordinator 	= ((coordinator + 1) % (total_sites+1));
-							coordinator	= coordinator == 0 ? (total_sites + 1) : coordinator;	// New coordinator
+							// Send the alias to all other participants.
+							for(i=0; i<total_sites; i++)  {
+								siteX[i].setLeaderVote((site_id-1), alias);
+								//System.out.println("Written: " + siteX[i].getLeaderVote(site_id-1) + " : alias: " + alias);
+							}
+
+							boolean []sflag = new boolean[original_sites];
+							int max = alias, tmpvar = 0;	coordinator = site_id;
+							while(timeout < (total_sites*2000)) {
+								for(i=0; i<original_sites; i++) {
+									if(!sflag[i]) {
+										tmpvar = stub.getLeaderVote(i);
+										//System.out.println("tmpvar: " + tmpvar);
+										if(tmpvar != 0) {
+											//System.out.println("tmpvar: " + tmpvar);
+											sflag[i]	= true;
+											if(tmpvar > max) {
+												max 		= tmpvar;
+												coordinator	= i+1;
+											} 
+											stub.setLeaderVote(i, 0);
+										} } }
+								timeout++;
+							}
+
+							//leader_id 	= ((leader_id + 1) % (total_sites+1));
+							//leader_id	= leader_id == 0 ? (total_sites + 1) : leader_id;	// New coordinator
 							boolean leader 	= coordinator == site_id ? true : false;		// Is a leader ?
 
 							if(leader) { 
@@ -378,7 +408,6 @@ public class Site1Client {
 									j = 0;
 									for(i=0; i<total_sites; i++) {
 										if(sites[i] != coordinator) {
-											//System.out.println("i: " + i + "  j: " + j);
 											stemp[j] = siteX[i]; 	
 											rsite[j] = sites[i];
 											j++;
@@ -387,8 +416,30 @@ public class Site1Client {
 									siteX		= stemp;
 									total_sites--;
 
-									coordinator 	= ((coordinator + 1) % (total_sites+1));
-									coordinator	= coordinator == 0 ? (total_sites + 1) : coordinator;	// New coordinator
+									// Send the alias to all other participants.
+									for(i=0; i<total_sites; i++)  {
+										siteX[i].setLeaderVote((site_id-1), alias);
+										//System.out.println("Written: " + siteX[i].getLeaderVote(site_id-1) + " : alias: " + alias);
+									}
+
+									boolean []sflag = new boolean[original_sites];
+									int max = alias, tmpvar = 0;	coordinator = site_id;
+									while(timeout < (total_sites*2000)) {
+										for(i=0; i<original_sites; i++) {
+											if(!sflag[i]) {
+												tmpvar = stub.getLeaderVote(i);
+												//System.out.println("tmpvar: " + tmpvar);
+												if(tmpvar != 0) {
+													//System.out.println("tmpvar: " + tmpvar);
+													sflag[i]	= true;
+													if(tmpvar > max) {
+														max 		= tmpvar;
+														coordinator	= i+1;
+													} 
+													stub.setLeaderVote(i, 0);
+												} } }
+										timeout++;
+									}
 									boolean leader 	= coordinator == site_id ? true : false;		// Is a leader ?
 
 									if(leader) { 
@@ -402,13 +453,13 @@ public class Site1Client {
 										if(decision > 0) {
 											System.out.println("Global-Commit message received at Site " + sid);
 											stub.setAck(1);
-											System.out.println("Transaction aborted at Site " + sid);
+											System.out.println("Transaction committed at Site " + sid);
 										} }
 								}
 								else { 
 									System.out.println("Global-Commit message received at Site " + sid);		
 									
-									selfFailure = site_id == 2 ? 0 : 1;//rd.nextInt(4);	
+									selfFailure = 1;//rd.nextInt(4);	site_id == 2 ? 0 : 1;
 									if(selfFailure == 0) { // Self Failure
 										System.out.println("Alert !!! Site " + site_id + " has failed");  
 										resetFlags(stub);
@@ -422,7 +473,7 @@ public class Site1Client {
 							} }	 
 					}
 					// Reset the flag, so as to accept further requests.
-					stub.setTransFlag(0);
+					resetFlags(stub);
 				}
 			}	
 		} catch (Exception e) {
