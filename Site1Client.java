@@ -1,6 +1,6 @@
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Random;
+import java.util.*;
 
 public class Site1Client {
 	private Site1Client() {}
@@ -23,7 +23,7 @@ public class Site1Client {
 		int failed_sites = total_sites, timeout = 0;
 
 		try {
-			while(timeout < (total_sites*5000)) {
+			while(timeout < (total_sites*1000)) {
 				for(int i=0; i<total_sites; i++) {
 					if(!sflag[i]) {
 						if(siteX[i].getAck() == decision) {
@@ -46,7 +46,7 @@ public class Site1Client {
 	static int coordinator_timeout(ThreePCInterface siteX, int total_sites) {
 		int timeout = 0;	int decision = 0;
 		try {
-			while(timeout < (total_sites*2000) && decision == 0) {
+			while(timeout < (total_sites*1000) && decision == 0) {
 				decision = siteX.getDecision();
 				timeout++;
 			}
@@ -71,7 +71,7 @@ public class Site1Client {
 			write_decision(siteX, sites, total_sites, 1, "Global-Commit");
 
 			// Wait for acknowledgement.
-			fsi = wait_for_acknowledgement(siteX, sites, total_sites, 1, "Prepare-to-Commit");
+			fsi = wait_for_acknowledgement(siteX, sites, total_sites, 1, "Global-Commit");
 			System.out.println("Transaction Committed at Site " + sid);
  		}
 	}
@@ -128,9 +128,13 @@ public class Site1Client {
 				// Recieved transaction
 				tflag = stub.getTransFlag();
 				if(tflag == 1 && coordinator == site_id) {
+					// For timing
+					long startTime = System.nanoTime();				
+	
+
 					System.out.println("Transaction received at Site " + sid);
 
-					int selfFailure = 1;//rd.nextInt(4);	
+					int selfFailure = 0;//rd.nextInt(4);	
 					if(selfFailure == 0) { // Self Failure
 						System.out.println("Alert !!! Coordinator has failed");  
 						stub.setTransFlag(0);		// Resetting the flag
@@ -239,7 +243,7 @@ public class Site1Client {
 								write_decision(siteX, sites, total_sites, 1, "Global-Commit");
 							}
 							else { // No failure -- Commit
-								selfFailure = 0;//rd.nextInt(4);	
+								selfFailure = 1;//rd.nextInt(4);	
 								if(selfFailure == 0) { // Self Failure
 									System.out.println("Alert !!! Coordinator has failed");  
 									resetFlags(stub);
@@ -279,8 +283,16 @@ public class Site1Client {
 		
 					// Reset the flag, so as to accept further requests.
 					stub.setTransFlag(0);
+					
+
+					long endTime = System.nanoTime();
+					System.out.println("Time: " + (endTime- startTime));
 				}
 				else if (tflag == 1) {	// Knows that it is a cohort
+					// Time
+					long startTime = System.nanoTime();
+				
+
 					System.out.println("Transaction received at Site " + sid);
 					int selfFailure;		
 					timeout = 0;	cflag = false;
@@ -336,7 +348,7 @@ public class Site1Client {
 
 							boolean []sflag = new boolean[original_sites];
 							int max = alias, tmpvar = 0;	coordinator = site_id;
-							while(timeout < (total_sites*2000)) {
+							while(timeout < (total_sites*1000)) {
 								for(i=0; i<original_sites; i++) {
 									if(!sflag[i]) {
 										tmpvar = stub.getLeaderVote(i);
@@ -375,7 +387,7 @@ public class Site1Client {
 							if(decision < 0) {
 								System.out.println("Global-Abort message received at Site " + sid);
 			
-								selfFailure = rd.nextInt(4);	
+								selfFailure = 1;//rd.nextInt(4);	
 								if(selfFailure == 0) { // Self Failure
 									System.out.println("Alert !!! Site1 has failed");  
 									resetFlags(stub);
@@ -424,13 +436,12 @@ public class Site1Client {
 
 									boolean []sflag = new boolean[original_sites];
 									int max = alias, tmpvar = 0;	coordinator = site_id;
-									while(timeout < (total_sites*2000)) {
+									while(timeout < (total_sites*1000)) {
 										for(i=0; i<original_sites; i++) {
 											if(!sflag[i]) {
 												tmpvar = stub.getLeaderVote(i);
 												//System.out.println("tmpvar: " + tmpvar);
 												if(tmpvar != 0) {
-													//System.out.println("tmpvar: " + tmpvar);
 													sflag[i]	= true;
 													if(tmpvar > max) {
 														max 		= tmpvar;
@@ -457,15 +468,14 @@ public class Site1Client {
 										} }
 								}
 								else { 
-									System.out.println("Global-Commit message received at Site " + sid);		
-									
 									selfFailure = 1;//rd.nextInt(4);	site_id == 2 ? 0 : 1;
 									if(selfFailure == 0) { // Self Failure
 										System.out.println("Alert !!! Site " + site_id + " has failed");  
 										resetFlags(stub);
 										break;
 									}
-						
+
+									System.out.println("Global-Commit message received at Site " + sid);
 									stub.setAck(1);
 									System.out.println("Transaction committed at Site " + sid);
 								} 
@@ -474,6 +484,10 @@ public class Site1Client {
 					}
 					// Reset the flag, so as to accept further requests.
 					resetFlags(stub);
+
+				
+					long endTime = System.nanoTime();
+					System.out.println("Time is: " + (endTime - startTime));
 				}
 			}	
 		} catch (Exception e) {
